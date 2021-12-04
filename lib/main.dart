@@ -1,7 +1,8 @@
-import 'package:flame/components/component.dart';
+import 'package:dino_run/game/game.dart';
 import 'package:flame/flame.dart';
-import 'package:flame/game/base_game.dart';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,22 +23,18 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key}) : super(key: key);
+  const MyHomePage({Key key}) : super(key: key);
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  BaseGame game;
+  DinoGame game;
   @override
   void initState() {
     super.initState();
-    game = BaseGame();
-    var dinoSprite = SpriteComponent.square(128, "DinoSprites_tard.gif");
-    dinoSprite.x = 100;
-    dinoSprite.y = 100;
-    game.add(dinoSprite);
+    game = DinoGame();
   }
 
   @override
