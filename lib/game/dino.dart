@@ -8,6 +8,7 @@ import 'package:flame/spritesheet.dart';
 class Dino extends AnimationComponent {
   Animation _runAnimation;
   Animation _hitAnimation;
+  Animation _jumpAnimation;
   double speedY = 0.0;
   double yMax = 0.0;
 
@@ -26,6 +27,8 @@ class Dino extends AnimationComponent {
     );
     // final idleAnimation =
     //     spriteSheet.createAnimation(0, from: 0, to: 3, stepTime: 0.1);
+    _jumpAnimation =
+        spriteSheet.createAnimation(0, from: 11, to: 13, stepTime: 0.5);
     _runAnimation =
         spriteSheet.createAnimation(0, from: 4, to: 10, stepTime: 0.1);
     _hitAnimation =
@@ -57,6 +60,7 @@ class Dino extends AnimationComponent {
     if (isOnGround()) {
       this.y = this.yMax;
       this.speedY = 0.0;
+      this.animation = _runAnimation;
     }
   }
 
@@ -74,7 +78,8 @@ class Dino extends AnimationComponent {
 
   void jump() {
     if (isOnGround()) {
-      this.speedY = -500;
+      this.speedY = -525;
+      this.animation = _jumpAnimation;
     }
   }
 }
