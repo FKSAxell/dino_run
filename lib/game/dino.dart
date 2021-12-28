@@ -40,7 +40,7 @@ class Dino extends AnimationComponent {
 
     this.animation = _runAnimation;
 
-    _timer = Timer(2, callback: () {
+    _timer = Timer(1, callback: () {
       run();
     });
     _isHit = false;
@@ -71,7 +71,9 @@ class Dino extends AnimationComponent {
     if (isOnGround()) {
       this.y = this.yMax;
       this.speedY = 0.0;
-      this.animation = _runAnimation;
+      if (!_isHit) {
+        this.animation = _runAnimation;
+      }
     }
     _timer.update(t);
   }
@@ -96,7 +98,9 @@ class Dino extends AnimationComponent {
   void jump() {
     if (isOnGround()) {
       this.speedY = -525;
-      this.animation = _jumpAnimation;
+      if (!_isHit) {
+        this.animation = _jumpAnimation;
+      }
     }
   }
 }
