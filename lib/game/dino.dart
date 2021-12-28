@@ -1,11 +1,13 @@
 import 'dart:ui';
 
+import 'package:dino_run/controllers/life_controller.dart';
 import 'package:dino_run/game/constants.dart';
 import 'package:flame/anchor.dart';
 import 'package:flame/animation.dart';
 import 'package:flame/components/animation_component.dart';
 import 'package:flame/spritesheet.dart';
 import 'package:flame/time.dart';
+import 'package:get/get.dart';
 
 class Dino extends AnimationComponent {
   Animation _runAnimation;
@@ -15,6 +17,7 @@ class Dino extends AnimationComponent {
   double yMax = 0.0;
   Timer _timer;
   bool _isHit;
+  final LifeController lifeCtrl = Get.find<LifeController>();
 
   Dino() : super.empty() {
     // 0 - 3 idle
@@ -90,6 +93,7 @@ class Dino extends AnimationComponent {
   void hit() {
     if (!_isHit) {
       this.animation = _hitAnimation;
+      lifeCtrl.decrement();
       _timer.start();
       _isHit = true;
     }
