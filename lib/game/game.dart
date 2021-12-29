@@ -2,6 +2,9 @@ import 'package:dino_run/controllers/life_controller.dart';
 import 'package:dino_run/game/dino.dart';
 import 'package:dino_run/game/enemy.dart';
 import 'package:dino_run/game/enemy_manager.dart';
+import 'package:dino_run/widgets/game_over_menu.dart';
+import 'package:dino_run/widgets/hud.dart';
+import 'package:dino_run/widgets/pause_menu.dart';
 import 'package:flame/components/parallax_component.dart';
 import 'package:flame/components/text_component.dart';
 import 'package:flame/game/base_game.dart';
@@ -53,7 +56,7 @@ class DinoGame extends BaseGame with TapDetector, HasWidgetsOverlay {
       ),
     );
     add(_scoreText);
-    addWidgetOverlay('Hud', _buildHud());
+    addWidgetOverlay('Hud', Hud(pauseGame: pauseGame));
   }
 
   @override
@@ -98,132 +101,24 @@ class DinoGame extends BaseGame with TapDetector, HasWidgetsOverlay {
 
   void gameOver() {
     pauseEngine();
-    addWidgetOverlay('GameOverMenu', _getGameOverMenu());
-  }
-
-  Widget _buildHud() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          icon: const Icon(
-            Icons.pause,
-            size: 30.0,
-            color: Colors.white,
-          ),
-          onPressed: pauseGame,
-        ),
-        Obx(
-          () {
-            List<Widget> list = [];
-
-            // This loop decides how many hearts are filled and how many are empty
-            // depending upon the current dino life.
-            for (int i = 0; i < 3; ++i) {
-              list.add(
-                Icon(
-                  (i < lifeCtrl.counter.value)
-                      ? Icons.favorite
-                      : Icons.favorite_border,
-                  color: Colors.red,
-                ),
-              );
-            }
-
-            return Container(
-              padding: const EdgeInsets.only(right: 20),
-              child: Row(
-                children: list,
-              ),
-            );
-          },
-        )
-      ],
+    addWidgetOverlay(
+      'GameOverMenu',
+      GameOverMenu(
+        score: score,
+        onRestartPressed: reset,
+      ),
     );
   }
 
   void pauseGame() {
     pauseEngine();
-    addWidgetOverlay('PauseMenu', _buildPauseMenu());
-  }
-
-  Widget _buildPauseMenu() {
-    return Center(
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        color: Colors.black.withOpacity(0.5),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 100.0,
-            vertical: 50.0,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Paused',
-                style: TextStyle(fontSize: 30.0, color: Colors.white),
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.play_arrow,
-                  color: Colors.white,
-                  size: 30.0,
-                ),
-                onPressed: () {
-                  removeWidgetOverlay('PauseMenu');
-                  resumeEngine();
-                },
-              )
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _getGameOverMenu() {
-    return Center(
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        color: Colors.black.withOpacity(0.5),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 80.0,
-            vertical: 30.0,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Game Over',
-                style: TextStyle(fontSize: 30.0, color: Colors.white),
-              ),
-              Text(
-                'Score: $score',
-                style: const TextStyle(fontSize: 20.0, color: Colors.white),
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.restart_alt,
-                  color: Colors.white,
-                  size: 20.0,
-                ),
-                onPressed: () {
-                  reset();
-                  removeWidgetOverlay('GameOverMenu');
-                  resumeEngine();
-                },
-              )
-            ],
-          ),
-        ),
+    addWidgetOverlay(
+      'PauseMenu',
+      PauseMenu(
+        onResumePressed: () {
+          removeWidgetOverlay('PauseMenu');
+          resumeEngine();
+        },
       ),
     );
   }
@@ -248,6 +143,8 @@ class DinoGame extends BaseGame with TapDetector, HasWidgetsOverlay {
   void reset() {
     score = 0;
     lifeCtrl.reset();
+    removeWidgetOverlay('GameOverMenu');
+    resumeEngine();
     _dino.run();
     _enemyManager.reset();
     components.whereType<Enemy>().forEach((enemy) {
