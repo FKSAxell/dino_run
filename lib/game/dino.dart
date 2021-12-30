@@ -1,110 +1,165 @@
 import 'dart:ui';
 
 import 'package:dino_run/controllers/life_controller.dart';
-import 'package:dino_run/game/constants.dart';
-import 'package:flame/anchor.dart';
-import 'package:flame/animation.dart';
-import 'package:flame/components/animation_component.dart';
-import 'package:flame/spritesheet.dart';
-import 'package:flame/time.dart';
+import 'package:dino_run/game/audio_manager.dart';
+import 'package:dino_run/game/dino_run.dart';
+import 'package:dino_run/game/enemy.dart';
+import 'package:dino_run/models/player_data.dart';
+import 'package:flame/components.dart';
+import 'package:flame/geometry.dart';
 import 'package:get/get.dart';
 
-class Dino extends AnimationComponent {
-  Animation _runAnimation;
-  Animation _hitAnimation;
-  Animation _jumpAnimation;
-  double speedY = 0.0;
+/// This enum represents the animation states of [Dino].
+enum DinoAnimationStates {
+  idle,
+  run,
+  kick,
+  hit,
+  sprint,
+}
+
+// This represents the dino character of this game.
+class Dino extends SpriteAnimationGroupComponent<DinoAnimationStates>
+    with HasHitboxes, Collidable, HasGameRef<DinoRun> {
+  // A map of all the animation states and their corresponding animations.
+  static final _animationMap = {
+    DinoAnimationStates.idle: SpriteAnimationData.sequenced(
+      amount: 4,
+      stepTime: 0.1,
+      textureSize: Vector2.all(24),
+    ),
+    DinoAnimationStates.run: SpriteAnimationData.sequenced(
+      amount: 6,
+      stepTime: 0.1,
+      textureSize: Vector2.all(24),
+      texturePosition: Vector2((4) * 24, 0),
+    ),
+    DinoAnimationStates.kick: SpriteAnimationData.sequenced(
+      amount: 4,
+      stepTime: 0.1,
+      textureSize: Vector2.all(24),
+      texturePosition: Vector2((4 + 6) * 24, 0),
+    ),
+    DinoAnimationStates.hit: SpriteAnimationData.sequenced(
+      amount: 3,
+      stepTime: 0.1,
+      textureSize: Vector2.all(24),
+      texturePosition: Vector2((4 + 6 + 4) * 24, 0),
+    ),
+    DinoAnimationStates.sprint: SpriteAnimationData.sequenced(
+      amount: 7,
+      stepTime: 0.1,
+      textureSize: Vector2.all(24),
+      texturePosition: Vector2((4 + 6 + 4 + 3) * 24, 0),
+    ),
+  };
+
+  // The max distance from top of the screen beyond which
+  // dino should never go. Basically the screen height - ground height
   double yMax = 0.0;
-  Timer _timer;
-  bool _isHit;
+
+  // Dino's current speed along y-axis.
+  double speedY = 0.0;
+
+  // Controlls how long the hit animations will be played.
+  final Timer _hitTimer = Timer(1);
+
+  static const double gravity = 800;
+
+  final PlayerData playerData;
+
+  bool isHit = false;
+
+  Dino(Image image, this.playerData)
+      : super.fromFrameData(image, _animationMap);
+
   final LifeController lifeCtrl = Get.find<LifeController>();
 
-  Dino() : super.empty() {
-    // 0 - 3 idle
-    // 4 - 10 run
-    // 11 - 13 kick
-    // 14 - 16 hit
-    // 17 - 23 Sprint
-    final spriteSheet = SpriteSheet(
-      imageName: "DinoSprites - tard.png",
-      textureWidth: 24,
-      textureHeight: 24,
-      columns: 24,
-      rows: 1,
-    );
-    // final idleAnimation =
-    //     spriteSheet.createAnimation(0, from: 0, to: 3, stepTime: 0.1);
-    _jumpAnimation =
-        spriteSheet.createAnimation(0, from: 11, to: 13, stepTime: 0.5);
-    _runAnimation =
-        spriteSheet.createAnimation(0, from: 4, to: 10, stepTime: 0.1);
-    _hitAnimation =
-        spriteSheet.createAnimation(0, from: 14, to: 16, stepTime: 0.1);
+  @override
+  void onMount() {
+    // First reset all the important properties, because onMount()
+    // will be called even while restarting the game.
+    _reset();
 
-    this.animation = _runAnimation;
+    // Add a hitbox for dino.
+    final shape = HitboxRectangle(relation: Vector2(0.5, 0.7));
+    addHitbox(shape);
+    yMax = y;
 
-    _timer = Timer(1, callback: () {
-      run();
-    });
-    _isHit = false;
-    this.anchor = Anchor.center;
+    /// Set the callback for [_hitTimer].
+    _hitTimer.onTick = () {
+      current = DinoAnimationStates.run;
+      isHit = false;
+    };
+
+    super.onMount();
   }
 
   @override
-  void resize(Size size) {
-    super.resize(size);
-    this.height = this.width = size.width / numberOfTilesAlongWidth;
-    this.x = this.width;
-    this.y =
-        size.height - groundHeight - (this.height / 2) + dinoTopBottomSpacing;
-    this.yMax = this.y;
-  }
+  void update(double dt) {
+    // v = u + at
+    speedY += gravity * dt;
 
-  @override
-  void update(double t) {
-    super.update(t);
-    // final velocity = initial velocity + gravity * time
-    // v= u+at
-    this.speedY += GRAVITY * t;
+    // d = s0 + s * t
+    y += speedY * dt;
 
-    //distance = speed * time
-    // d = s0 *t
-    this.y += this.speedY * t;
-
-    if (isOnGround()) {
-      this.y = this.yMax;
-      this.speedY = 0.0;
-      if (!_isHit) {
-        this.animation = _runAnimation;
+    /// This code makes sure that dino never goes beyond [yMax].
+    if (isOnGround) {
+      y = yMax;
+      speedY = 0.0;
+      if ((current != DinoAnimationStates.hit) &&
+          (current != DinoAnimationStates.run)) {
+        current = DinoAnimationStates.run;
       }
     }
-    _timer.update(t);
+
+    _hitTimer.update(dt);
+    super.update(dt);
   }
 
-  bool isOnGround() {
-    return (this.y >= this.yMax);
-  }
+  bool get isOnGround => (y >= yMax);
 
-  void run() {
-    _isHit = false;
-    this.animation = _runAnimation;
-  }
-
-  void hit() {
-    if (!_isHit) {
-      this.animation = _hitAnimation;
-      lifeCtrl.decrement();
-      _timer.start();
-      _isHit = true;
+  // Gets called when dino collides with other Collidables.
+  @override
+  void onCollision(Set<Vector2> intersectionPoints, Collidable other) {
+    // Call hit only if other component is an Enemy and dino
+    // is not already in hit state.
+    if ((other is Enemy) && (!isHit)) {
+      hit();
     }
+    super.onCollision(intersectionPoints, other);
   }
 
+  // Makes the dino jump.
   void jump() {
-    if (isOnGround()) {
-      this.speedY = -525;
-      if (!_isHit) {
-        this.animation = _jumpAnimation;
-      }
+    // Jump only if dino is on ground.
+    if (isOnGround) {
+      speedY = -300;
+      current = DinoAnimationStates.idle;
+      AudioManager.instance.playSfx('jump14.wav');
     }
+  }
+
+  // This method changes the animation state to
+  /// [DinoAnimationStates.hit], plays the hit sound
+  /// effect and reduces the player life by 1.
+  void hit() {
+    isHit = true;
+    AudioManager.instance.playSfx('hurt7.wav');
+    current = DinoAnimationStates.hit;
+    _hitTimer.start();
+    playerData.lives -= 1;
+  }
+
+  // This method reset some of the important properties
+  // of this component back to normal.
+  void _reset() {
+    shouldRemove = false;
+    anchor = Anchor.bottomLeft;
+    position = Vector2(32, gameRef.size.y - 22);
+    size = Vector2.all(24);
+    current = DinoAnimationStates.run;
+    isHit = false;
+    speedY = 0.0;
   }
 }
