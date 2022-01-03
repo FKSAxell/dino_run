@@ -73,7 +73,7 @@ class Dino extends SpriteAnimationGroupComponent<DinoAnimationStates>
   Dino(Image image, this.playerData)
       : super.fromFrameData(image, _animationMap);
 
-  final LifeController lifeCtrl = Get.find<LifeController>();
+  // final LifeController lifeCtrl = Get.find<LifeController>();
 
   @override
   void onMount() {

@@ -14,11 +14,11 @@ class Settings extends GetxController {
     final storeBgm = await _storage.read('bgm');
     final storeSfx = await _storage.read('sfx');
 
-    if (storeBgm) {
+    if (storeBgm != null) {
       _bgm.value = storeBgm;
     }
 
-    if (storeSfx) {
+    if (storeSfx != null) {
       _sfx.value = storeSfx;
     }
 

@@ -1,5 +1,9 @@
 import 'package:dino_run/game/dino_run.dart';
+import 'package:dino_run/widgets/game_over_menu.dart';
+import 'package:dino_run/widgets/hud.dart';
 import 'package:dino_run/widgets/main_menu.dart';
+import 'package:dino_run/widgets/pause_menu.dart';
+import 'package:dino_run/widgets/settings_menu.dart';
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
 
@@ -44,10 +48,10 @@ class MyApp extends StatelessWidget {
           // Register all the overlays that will be used by this game.
           overlayBuilderMap: {
             MainMenu.id: (_, DinoRun gameRef) => MainMenu(gameRef),
-            // PauseMenu.id: (_, DinoRun gameRef) => PauseMenu(gameRef),
-            // Hud.id: (_, DinoRun gameRef) => Hud(gameRef),
-            // GameOverMenu.id: (_, DinoRun gameRef) => GameOverMenu(gameRef),
-            // SettingsMenu.id: (_, DinoRun gameRef) => SettingsMenu(gameRef),
+            PauseMenu.id: (_, DinoRun gameRef) => PauseMenu(gameRef),
+            Hud.id: (_, DinoRun gameRef) => Hud(gameRef),
+            GameOverMenu.id: (_, DinoRun gameRef) => GameOverMenu(gameRef),
+            SettingsMenu.id: (_, DinoRun gameRef) => SettingsMenu(gameRef),
           },
           // By default MainMenu overlay will be active.
           initialActiveOverlays: const [MainMenu.id],

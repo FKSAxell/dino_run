@@ -1,60 +1,100 @@
-import 'package:dino_run/screens/main_menu.dart';
-import 'package:flutter/material.dart';
+import 'dart:ui';
 
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '/widgets/hud.dart';
+import '/game/dino_run.dart';
+import '/widgets/main_menu.dart';
+import '/game/audio_manager.dart';
+import '/models/player_data.dart';
+
+// This represents the pause menu overlay.
 class PauseMenu extends StatelessWidget {
-  final Function onResumePressed;
-  const PauseMenu({Key key, @required this.onResumePressed}) : super(key: key);
+  // An unique identified for this overlay.
+  static const id = 'PauseMenu';
+
+  // Reference to parent game.
+  final DinoRun gameRef;
+
+  const PauseMenu(this.gameRef, {Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final PlayerData playerData = Get.find<PlayerData>();
     return Center(
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        color: Colors.black.withOpacity(0.5),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 100.0,
-            vertical: 50.0,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Paused',
-                style: TextStyle(fontSize: 30.0, color: Colors.white),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Card(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          color: Colors.black.withAlpha(100),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 20, horizontal: 100),
+              child: Wrap(
+                direction: Axis.vertical,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
                 children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.home,
-                      color: Colors.white,
-                      size: 30.0,
-                    ),
-                    onPressed: () => Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (context) => MainMenu(),
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Obx(() => Text(
+                          'Score: ${playerData.currentScore}',
+                          style: const TextStyle(
+                              fontSize: 40, color: Colors.white),
+                        )),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      gameRef.overlays.remove(PauseMenu.id);
+                      gameRef.overlays.add(Hud.id);
+                      gameRef.resumeEngine();
+                      AudioManager.instance.resumeBgm();
+                    },
+                    child: const Text(
+                      'Resume',
+                      style: TextStyle(
+                        fontSize: 30,
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: 30,
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 30.0,
+                  ElevatedButton(
+                    onPressed: () {
+                      gameRef.overlays.remove(PauseMenu.id);
+                      gameRef.overlays.add(Hud.id);
+                      gameRef.resumeEngine();
+                      gameRef.reset();
+                      gameRef.startGamePlay();
+                      AudioManager.instance.resumeBgm();
+                    },
+                    child: const Text(
+                      'Restart',
+                      style: TextStyle(
+                        fontSize: 30,
+                      ),
                     ),
-                    onPressed: onResumePressed,
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      gameRef.overlays.remove(PauseMenu.id);
+                      gameRef.overlays.add(MainMenu.id);
+                      gameRef.resumeEngine();
+                      gameRef.reset();
+                      AudioManager.instance.resumeBgm();
+                    },
+                    child: const Text(
+                      'Exit',
+                      style: TextStyle(
+                        fontSize: 30,
+                      ),
+                    ),
                   ),
                 ],
-              )
-            ],
+              ),
+            ),
           ),
         ),
       ),

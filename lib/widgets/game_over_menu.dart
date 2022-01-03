@@ -1,69 +1,89 @@
-import 'package:dino_run/screens/main_menu.dart';
-import 'package:flutter/material.dart';
+import 'dart:ui';
 
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '/widgets/hud.dart';
+import '/game/dino_run.dart';
+import '/widgets/main_menu.dart';
+import '/models/player_data.dart';
+import '/game/audio_manager.dart';
+
+// This represents the game over overlay,
+// displayed with dino runs out of lives.
 class GameOverMenu extends StatelessWidget {
-  final Function onRestartPressed;
-  final int score;
-  const GameOverMenu({
-    Key key,
-    @required this.onRestartPressed,
-    @required this.score,
-  }) : super(key: key);
+  // An unique identified for this overlay.
+  static const id = 'GameOverMenu';
+
+  // Reference to parent game.
+  final DinoRun gameRef;
+
+  const GameOverMenu(this.gameRef, {Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final PlayerData playerData = Get.find<PlayerData>();
+
     return Center(
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        color: Colors.black.withOpacity(0.5),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 80.0,
-            vertical: 30.0,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Game Over',
-                style: TextStyle(fontSize: 30.0, color: Colors.white),
-              ),
-              Text(
-                'Score: $score',
-                style: const TextStyle(fontSize: 20.0, color: Colors.white),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Card(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          color: Colors.black.withAlpha(100),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 20, horizontal: 100),
+              child: Wrap(
+                direction: Axis.vertical,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
                 children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.home,
-                      color: Colors.white,
-                      size: 20.0,
-                    ),
-                    onPressed: () => Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (context) => MainMenu(),
+                  const Text(
+                    'Game Over',
+                    style: TextStyle(fontSize: 40, color: Colors.white),
+                  ),
+                  Obx(() => Text(
+                        'You Score: ${playerData.currentScore}',
+                        style:
+                            const TextStyle(fontSize: 40, color: Colors.white),
+                      )),
+                  ElevatedButton(
+                    child: const Text(
+                      'Restart',
+                      style: TextStyle(
+                        fontSize: 30,
                       ),
                     ),
+                    onPressed: () {
+                      gameRef.overlays.remove(GameOverMenu.id);
+                      gameRef.overlays.add(Hud.id);
+                      gameRef.resumeEngine();
+                      gameRef.reset();
+                      gameRef.startGamePlay();
+                      // AudioManager.instance.resumeBgm();
+                    },
                   ),
-                  const SizedBox(
-                    width: 30,
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.restart_alt,
-                      color: Colors.white,
-                      size: 20.0,
+                  ElevatedButton(
+                    child: const Text(
+                      'Exit',
+                      style: TextStyle(
+                        fontSize: 30,
+                      ),
                     ),
-                    onPressed: onRestartPressed,
+                    onPressed: () {
+                      gameRef.overlays.remove(GameOverMenu.id);
+                      gameRef.overlays.add(MainMenu.id);
+                      gameRef.resumeEngine();
+                      gameRef.reset();
+                      // AudioManager.instance.resumeBgm();
+                    },
                   ),
                 ],
-              )
-            ],
+              ),
+            ),
           ),
         ),
       ),

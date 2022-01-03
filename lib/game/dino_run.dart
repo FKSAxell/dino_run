@@ -1,11 +1,10 @@
-import 'package:dino_run/controllers/life_controller.dart';
 import 'package:dino_run/game/audio_manager.dart';
 import 'package:dino_run/game/dino.dart';
-import 'package:dino_run/game/enemy.dart';
 import 'package:dino_run/game/enemy_manager.dart';
 import 'package:dino_run/models/player_data.dart';
 import 'package:dino_run/models/settings.dart';
 import 'package:dino_run/widgets/game_over_menu.dart';
+import 'package:dino_run/widgets/hud.dart';
 import 'package:dino_run/widgets/pause_menu.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
@@ -98,7 +97,6 @@ class DinoRun extends FlameGame with TapDetector, HasCollidables {
   //     layerDelta: Offset(20, 0),
   //   );
   //   add(_parallaxComponent);
-
   //   _dino = Dino();
   //   add(_dino);
   //   _enemyManager = EnemyManager();
@@ -117,90 +115,77 @@ class DinoRun extends FlameGame with TapDetector, HasCollidables {
   //   addWidgetOverlay('Hud', Hud(pauseGame: pauseGame));
   // }
 
-  @override
-  void onTapDown(TapDownDetails details) {
-    super.onTapDown(details);
-
-    _dino.jump();
+  /// This method add the already created [Dino]
+  /// and [EnemyManager] to this game.
+  void startGamePlay() {
+    add(_dino);
+    add(_enemyManager);
   }
 
-  @override
-  void onTapUp(TapUpDetails details) {
-    // TODO: implement onTapUp
-    super.onTapUp(details);
-    // if(_dino.speedY<){
-
-    // }
-    _dino.speedY += 120;
+  // This method remove all the actors from the game.
+  void _disconnectActors() {
+    _dino.removeFromParent();
+    _enemyManager.removeAllEnemies();
+    _enemyManager.removeFromParent();
   }
 
+// This will get called for each tap on the screen.
   @override
-  void update(double t) {
-    super.update(t);
-    score += (60 * t).toInt();
-    _scoreText.text = score.toString();
-
-    components.whereType<Enemy>().forEach((enemy) {
-      if (_dino.distance(enemy) < 30) {
-        _dino.hit();
-      }
-    });
-
-    if (lifeCtrl.counter.value <= 0) {
-      gameOver();
+  void onTapDown(TapDownInfo info) {
+    // Make dino jump only when game is playing.
+    // When game is in playing state, only Hud will be the active overlay.
+    if (overlays.isActive(Hud.id)) {
+      _dino.jump();
     }
+    super.onTapDown(info);
   }
 
-  void gameOver() {
-    pauseEngine();
-    addWidgetOverlay(
-      'GameOverMenu',
-      GameOverMenu(
-        score: score,
-        onRestartPressed: reset,
-      ),
-    );
-  }
-
-  void pauseGame() {
-    pauseEngine();
-    addWidgetOverlay(
-      'PauseMenu',
-      PauseMenu(
-        onResumePressed: () {
-          removeWidgetOverlay('PauseMenu');
-          resumeEngine();
-        },
-      ),
-    );
+  // This method gets called for each tick/frame of the game.
+  @override
+  void update(double dt) {
+    // If number of lives is 0 or less, game is over.
+    if (playerData.lives <= 0) {
+      overlays.add(GameOverMenu.id);
+      overlays.remove(Hud.id);
+      pauseEngine();
+      AudioManager.instance.pauseBgm();
+    }
+    super.update(dt);
   }
 
   @override
   void lifecycleStateChange(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        break;
-      case AppLifecycleState.inactive:
-        pauseGame();
+        // On resume, if active overlay is not PauseMenu,
+        // resume the engine (lets the parallax effect play).
+        if (!(overlays.isActive(PauseMenu.id)) &&
+            !(overlays.isActive(GameOverMenu.id))) {
+          resumeEngine();
+        }
         break;
       case AppLifecycleState.paused:
-        pauseGame();
-        break;
       case AppLifecycleState.detached:
-        pauseGame();
+      case AppLifecycleState.inactive:
+        // If game is active, then remove Hud and add PauseMenu
+        // before pausing the game.
+        if (overlays.isActive(Hud.id)) {
+          overlays.remove(Hud.id);
+          overlays.add(PauseMenu.id);
+        }
+        pauseEngine();
         break;
     }
+    super.lifecycleStateChange(state);
   }
 
+  // This method reset the whole game world to initial state.
   void reset() {
-    score = 0;
-    lifeCtrl.reset();
-    removeWidgetOverlay('GameOverMenu');
-    resumeEngine();
-    _dino.run();
-    _enemyManager.reset();
-    components.whereType<Enemy>().forEach((enemy) {
-      this.markToRemove(enemy);
-    });
+    // First disconnect all actions from game world.
+    _disconnectActors();
+
+    // Reset player data to inital values.
+    playerData.currentScore = 0;
+    playerData.lives = 3;
   }
 }

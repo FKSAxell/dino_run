@@ -15,7 +15,7 @@ class PlayerData extends GetxController {
   void onInit() async {
     final storeHighScore = await _storage.read('highScore');
 
-    if (storeHighScore) {
+    if (storeHighScore != null) {
       highScore.value = storeHighScore;
     }
 

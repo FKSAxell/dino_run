@@ -1,50 +1,72 @@
-import 'package:dino_run/controllers/life_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '/game/dino_run.dart';
+import '/game/audio_manager.dart';
+import '/models/player_data.dart';
+import '/widgets/pause_menu.dart';
+
+// This represents the head up display in game.
+// It consists of, current score, high score,
+// a pause button and number of remaining lives.
 class Hud extends StatelessWidget {
-  final Function pauseGame;
-  const Hud({Key key, @required this.pauseGame}) : super(key: key);
+  // An unique identified for this overlay.
+  static const id = 'Hud';
+
+  // Reference to parent game.
+  final DinoRun gameRef;
+
+  const Hud(this.gameRef, {Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    final LifeController lifeCtrl = Get.find<LifeController>();
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          icon: const Icon(
-            Icons.pause,
-            size: 30.0,
-            color: Colors.white,
+    final PlayerData playerData = Get.find<PlayerData>();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: [
+              Obx(() => Text(
+                    'Score: ${playerData.currentScore}',
+                    style: const TextStyle(fontSize: 20, color: Colors.white),
+                  )),
+              Obx(() => Text(
+                    'Score: ${playerData.highScore}',
+                    style: const TextStyle(color: Colors.white),
+                  )),
+            ],
           ),
-          onPressed: pauseGame,
-        ),
-        Obx(
-          () {
-            List<Widget> list = [];
-
-            // This loop decides how many hearts are filled and how many are empty
-            // depending upon the current dino life.
-            for (int i = 0; i < 3; ++i) {
-              list.add(
-                Icon(
-                  (i < lifeCtrl.counter.value)
-                      ? Icons.favorite
-                      : Icons.favorite_border,
-                  color: Colors.red,
-                ),
-              );
-            }
-
-            return Container(
-              padding: const EdgeInsets.only(right: 20),
-              child: Row(
-                children: list,
-              ),
-            );
-          },
-        )
-      ],
+          TextButton(
+            onPressed: () {
+              gameRef.overlays.remove(Hud.id);
+              gameRef.overlays.add(PauseMenu.id);
+              gameRef.pauseEngine();
+              AudioManager.instance.pauseBgm();
+            },
+            child: const Icon(Icons.pause, color: Colors.white),
+          ),
+          Obx(
+            () => Row(
+              children: List.generate(3, (index) {
+                if (index < playerData.lives) {
+                  return const Icon(
+                    Icons.favorite,
+                    color: Colors.red,
+                  );
+                } else {
+                  return const Icon(
+                    Icons.favorite_border,
+                    color: Colors.red,
+                  );
+                }
+              }),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
